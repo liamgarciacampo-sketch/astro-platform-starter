@@ -1,189 +1,68 @@
 ---
-<!-- PEGAR este archivo como: src/pages/index.astro -->
-<!-- Muestra una página simple "Página de Marcelo" con botón para subir archivo a Firebase Storage. -->
+import Layout from '../layouts/Layout.astro';
+---
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Página de Marcelo</title>
-  <!-- Tailwind por CDN para estilos rápidos -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial; }
-  </style>
-  <!-- Firebase (compat) -->
+<Layout title="Página de Marcelo">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f3f4f6;padding:16px;">
+    <div style="width:100%;max-width:600px;background:white;border-radius:20px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:24px;font-family:system-ui,Roboto,Arial;">
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:8px;">Página de Marcelo</h1>
+      <p style="color:#555;margin-bottom:16px;">Sube tu tarea (PDF, DOCX, PPTX, JPG, PNG · máx 25 MB)</p>
+
+      <input id="fileInput" type="file" accept=".pdf,.docx,.pptx,.png,.jpg,.jpeg" style="margin-bottom:12px;"/><br/>
+      <button id="uploadBtn" style="width:100%;padding:10px 14px;background:#2563eb;color:white;border:0;border-radius:10px;font-weight:600;cursor:pointer;">Subir archivo</button>
+
+      <div id="progress" style="height:8px;background:#ddd;border-radius:999px;margin-top:10px;overflow:hidden;">
+        <div id="bar" style="height:8px;width:0;background:#3b82f6;transition:width .2s;"></div>
+      </div>
+      <p id="status" style="font-size:14px;color:#555;margin-top:8px;">Esperando archivo…</p>
+      <p id="link" style="word-break:break-all;margin-top:8px;"></p>
+    </div>
+  </div>
+
   <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-storage-compat.js"></script>
-</head>
-
-<div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-  <div class="w-full max-w-xl">
-    <div class="bg-white rounded-2xl shadow-lg p-6">
-      <h1 class="text-2xl font-bold mb-1">Página de Marcelo</h1>
-      <p class="text-sm text-gray-600 mb-4">Sube tu tarea. (Si no ves nada antes, era porque el index.astro anterior tapaba el HTML.)</p>
-
-      <!-- Bloque de configuración rápida sin tocar código del proyecto -->
-      <details class="mb-4" open>
-        <summary class="cursor-pointer text-sm text-gray-700">Configurar Firebase (pega tu firebaseConfig JSON)</summary>
-        <div class="mt-3 space-y-2">
-          <textarea id="cfgText" rows="6" class="w-full rounded-xl border border-gray-300 p-2 font-mono text-xs" placeholder='{
-  "apiKey": "AIza...",
-  "authDomain": "tu-proyecto.firebaseapp.com",
-  "projectId": "tu-proyecto",
-  "storageBucket": "tu-proyecto.appspot.com",
-  "messagingSenderId": "1234567890",
-  "appId": "1:1234567890:web:abcdef"
-}'></textarea>
-          <div class="flex items-center gap-2">
-            <button id="btnSaveCfg" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">Guardar & Inicializar</button>
-            <span id="cfgStatus" class="text-xs text-gray-600"></span>
-          </div>
-        </div>
-      </details>
-
-      <!-- Subida de archivo -->
-      <form id="uploadForm" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium mb-2">Archivo</label>
-          <div id="dropzone" class="rounded-2xl border-2 border-dashed border-gray-300 p-6 text-center cursor-pointer hover:bg-gray-50">
-            <input id="file" name="file" type="file" accept=".pdf,.docx,.pptx,.png,.jpg,.jpeg" class="hidden" />
-            <div class="flex flex-col items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 text-gray-400">
-                <path fill-rule="evenodd" d="M1.5 6A2.25 2.25 0 013.75 3.75h10.5A2.25 2.25 0 0116.5 6v1.5h3.75A2.25 2.25 0 0122.5 9.75v9A2.25 2.25 0 0120.25 21H3.75A2.25 2.25 0 011.5 18.75v-12zm12-1.5H3.75a.75.75 0 00-.75.75V7.5h10.5V5.25a.75.75 0 00-.75-.75zm6 6.75a.75.75 0 00-1.5 0v3.439l-1.72-1.72a.75.75 0 10-1.06 1.06l3.25 3.25a.75.75 0 001.06 0l3.25-3.25a.75.75 0 10-1.06-1.06l-1.72 1.72V10.5z" clip-rule="evenodd" />
-              </svg>
-              <p class="text-sm text-gray-700"><span class="font-semibold">Haz clic o arrastra</span> tu archivo aquí</p>
-            </div>
-          </div>
-          <p id="fileName" class="mt-2 text-sm text-gray-600 hidden"></p>
-        </div>
-
-        <div class="space-y-2">
-          <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-            <div id="progressBar" class="bg-blue-600 h-2 w-0 transition-all"></div>
-          </div>
-          <p id="status" class="text-sm text-gray-600">Esperando configuración…</p>
-        </div>
-
-        <button id="submitBtn" type="submit" class="w-full rounded-xl bg-blue-600 text-white font-semibold py-2 hover:bg-blue-700 disabled:opacity-50" disabled>Subir</button>
-      </form>
-
-      <div id="result" class="mt-4 hidden">
-        <div class="p-3 rounded-xl bg-green-50 text-green-800 text-sm">
-          ✅ Archivo subido.
-          <span class="block">Enlace: <a id="fileLink" href="#" target="_blank" class="underline break-all"></a></span>
-        </div>
-      </div>
-
-      <footer class="mt-6 text-xs text-gray-500">
-        * Habilita Authentication → Anonymous en Firebase. Si ya está habilitado y no sube, dime el error exacto.
-      </footer>
-    </div>
-  </div>
-</div>
-
-<script>
-  // Helpers UI
-  const $ = (sel) => document.querySelector(sel);
-  const statusEl = $('#status');
-  const fileInput = $('#file');
-  const fileName = $('#fileName');
-  const dropzone = $('#dropzone');
-  const form = $('#uploadForm');
-  const progressBar = $('#progressBar');
-  const result = $('#result');
-  const fileLink = $('#fileLink');
-  const submitBtn = $('#submitBtn');
-  const cfgText = $('#cfgText');
-  const cfgStatus = $('#cfgStatus');
-
-  let app, auth, storage, authReady = false;
-
-  function humanSize(bytes){
-    const u=['B','KB','MB','GB'];
-    let i=0; let n=bytes;
-    while(n>=1024 && i<u.length-1){ n/=1024; i++; }
-    return `${n.toFixed(1)} ${u[i]}`;
-  }
-
-  dropzone.addEventListener('click', () => fileInput.click());
-  dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('bg-gray-100'); });
-  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('bg-gray-100'));
-  dropzone.addEventListener('drop', (e) => {
-    e.preventDefault(); dropzone.classList.remove('bg-gray-100');
-    if(e.dataTransfer.files && e.dataTransfer.files[0]){
-      fileInput.files = e.dataTransfer.files; updateFileName();
-    }
-  });
-  fileInput.addEventListener('change', updateFileName);
-  function updateFileName(){
-    const f = fileInput.files[0];
-    if(!f){ fileName.classList.add('hidden'); return; }
-    fileName.textContent = `Archivo seleccionado: ${f.name} (${humanSize(f.size)})`;
-    fileName.classList.remove('hidden');
-    statusEl.textContent = 'Listo para subir.';
-  }
-
-  // Inicializa Firebase desde JSON pegado
-  document.getElementById('btnSaveCfg').addEventListener('click', async () => {
-    let cfg;
-    try{ cfg = JSON.parse(cfgText.value.trim()); }catch(e){
-      cfgStatus.textContent = 'JSON inválido'; cfgStatus.className='text-xs text-red-700'; return;
-    }
-    try{
-      app = firebase.initializeApp(cfg);
-      auth = firebase.auth();
-      storage = firebase.storage();
-      cfgStatus.textContent = 'Firebase inicializado ✅'; cfgStatus.className='text-xs text-green-700';
-    }catch(e){ cfgStatus.textContent = 'Error init: '+e.message; cfgStatus.className='text-xs text-red-700'; return; }
-    try{
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const firebaseConfig = {
+        apiKey: "TU_API_KEY",
+        authDomain: "TU_AUTH_DOMAIN",
+        projectId: "TU_PROJECT_ID",
+        storageBucket: "TU_STORAGE_BUCKET",
+        messagingSenderId: "TU_SENDER_ID",
+        appId: "TU_APP_ID"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const storage = firebase.storage();
       await auth.signInAnonymously();
-      authReady = true; submitBtn.disabled = false;
-      statusEl.textContent = 'Autenticado (anónimo). Listo para subir.';
-    }catch(e){
-      authReady = false; submitBtn.disabled = true;
-      statusEl.textContent = '❌ No se pudo iniciar sesión anónima (habilita Anonymous)';
-      alert('Habilita Anonymous en Authentication → Sign-in method');
-    }
-  });
 
-  // Subida a Storage
-  const MAX_SIZE = 25 * 1024 * 1024;
-  const ALLOWED = [
-    'application/pdf',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'image/png', 'image/jpeg'
-  ];
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if(!authReady){ alert('Configura Firebase y login anónimo primero.'); return; }
-    const file = fileInput.files[0];
-    if(!file){ alert('Selecciona un archivo.'); return; }
-    if(file.size > MAX_SIZE){ alert('El archivo excede 25 MB.'); return; }
-    if(!ALLOWED.includes(file.type)){
-      if(!confirm('Tipo no reconocido. ¿Subir de todos modos?')) return;
-    }
-    const key = `uploads/${Date.now()}-${file.name}`;
-    const ref = storage.ref().child(key);
-    progressBar.style.width = '0%';
-    statusEl.textContent = 'Subiendo…'; submitBtn.disabled = true;
-    const task = ref.put(file);
-    task.on('state_changed', (snap) => {
-      const pct = (snap.bytesTransferred / snap.totalBytes) * 100;
-      progressBar.style.width = pct + '%';
-    }, (err) => {
-      alert('Error al subir: '+err.message);
-      statusEl.textContent = 'Error al subir.'; submitBtn.disabled = false;
-    }, async () => {
-      try{ const url = await ref.getDownloadURL();
-        result.classList.remove('hidden'); fileLink.href = url; fileLink.textContent = url; statusEl.textContent = 'Subida completa.';
-      }catch(e){
-        result.classList.remove('hidden'); result.querySelector('.p-3').innerHTML = '⚠️ Subido, pero sin enlace público. Revisa reglas de Storage.'; statusEl.textContent = 'Completa (sin enlace)';
-      }finally{ form.reset(); progressBar.style.width='0%'; fileName.classList.add('hidden'); submitBtn.disabled=false; }
+      const fileInput = document.getElementById("fileInput");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const progress = document.getElementById("bar");
+      const status = document.getElementById("status");
+      const link = document.getElementById("link");
+
+      uploadBtn.onclick = () => {
+        const file = fileInput.files[0];
+        if (!file) return alert("Selecciona un archivo primero.");
+        const ref = storage.ref().child("tareas/" + Date.now() + "-" + file.name);
+        const task = ref.put(file);
+        status.textContent = "Subiendo…";
+
+        task.on("state_changed", snap => {
+          const pct = (snap.bytesTransferred / snap.totalBytes) * 100;
+          progress.style.width = pct + "%";
+        }, err => {
+          status.textContent = "Error: " + err.message;
+        }, async () => {
+          const url = await ref.getDownloadURL();
+          status.textContent = "✅ Subida completa";
+          link.innerHTML = 'Enlace: <a href="' + url + '" target="_blank">' + url + "</a>";
+          progress.style.width = "0%";
+          fileInput.value = "";
+        });
+      };
     });
-  });
-</script>
+  </script>
+</Layout>
